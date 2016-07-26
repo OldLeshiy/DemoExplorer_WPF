@@ -25,6 +25,7 @@ namespace Explorer_wpf
             set
             {
                 _selectedDrive = value;
+
                 
                 if (PropertyChanged != null)
                 {
