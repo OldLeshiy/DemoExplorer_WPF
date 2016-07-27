@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Windows;
 
 namespace Explorer_wpf
 {
@@ -15,24 +16,30 @@ namespace Explorer_wpf
         private ObservableCollection<string> _files;
         private string _selectedDrive;
         private string _selectedDirectory;
-        
+        private string sDirectory;
+        private string sDrive;
+
         public string SelectedDrive
         {
             get
             {
-                return _selectedDrive; 
+                return _selectedDrive;
             }
             set
             {
+                if (_selectedDrive!=null)
+                        
+                        sDrive = _selectedDrive;
+
                 _selectedDrive = value;
 
+                CreateDirectityList();
                 
                 if (PropertyChanged != null)
                 {
                     PropertyChanged(this, new PropertyChangedEventArgs("SelectedDrive"));
-                    
+
                 }
-                CreateDirectityList();
             }
         }
 
@@ -44,23 +51,27 @@ namespace Explorer_wpf
             }
             set
             {
-                _selectedDirectory = value;
-                
-                if (PropertyChanged != null)
-                {
-                    PropertyChanged(this, new PropertyChangedEventArgs("SelectedDirectory"));
+                if (_selectedDirectory!=null)
+                    
+                        sDirectory = _selectedDirectory;
 
-                }
+                _selectedDirectory = value;
 
                 CreateSubDirectityList();
 
+                if (PropertyChanged != null)
+                {
+
+                    PropertyChanged(this, new PropertyChangedEventArgs("SelectedDirectory"));
+
+                }
             }
         }
 
         public DrivesViewModel()
         {
             _drives = new ObservableCollection<string>();
-            
+
             foreach (var d in DriveInfo.GetDrives())
             {
                 _drives.Add(d.Name);
@@ -73,28 +84,38 @@ namespace Explorer_wpf
 
             _files = new ObservableCollection<string>();
 
-            
-
         }
 
         private void CreateSubDirectityList()
         {
             if (_selectedDirectory != null)
             {
-                FileAttributes attr = File.GetAttributes(_selectedDirectory);
-                if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
+                SelectedDrive = null;
+                try
                 {
-                    _directories.Clear();
-                    foreach (var d in Directory.GetDirectories(_selectedDirectory))
+                    FileAttributes attr = File.GetAttributes(_selectedDirectory);
+                    if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
                     {
-                        _directories.Add(d);
+                        _directories.Clear();
+                        
+                        foreach (var d in Directory.GetDirectories(_selectedDirectory))
+                        {
+                            _directories.Add(d);
+                        }
+                        foreach (var f in Directory.GetFiles(_selectedDirectory))
+                        {
+                            _directories.Add(f);
+                        }
                     }
-                    foreach (var f in Directory.GetFiles(_selectedDirectory))
-                    {
-                        _directories.Add(f);
-                    }
+                    else _selectedDirectory = null;
                 }
-                else _selectedDirectory = null;
+                catch (UnauthorizedAccessException e)
+                {
+                    MessageBox.Show(App.Current.MainWindow, e.Message);
+                    SelectedDrive = sDrive;
+                    SelectedDirectory = sDirectory;
+                    
+                }
             }
         }
 
@@ -102,7 +123,7 @@ namespace Explorer_wpf
         {
             if (_selectedDrive != null)
             {
-                
+
                 _directories.Clear();
                 var d = new DriveInfo(_selectedDrive);
                 if (d.IsReady)
@@ -116,7 +137,6 @@ namespace Explorer_wpf
                         _directories.Add(f);
                     }
                 }
-               
             }
         }
 
@@ -154,7 +174,7 @@ namespace Explorer_wpf
 
 
         public event PropertyChangedEventHandler PropertyChanged;
-        
+
     }
 
 }
